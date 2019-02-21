@@ -266,7 +266,7 @@ public class MainPageObject {
         return element.getAttribute(attribute);
     }
 
-    private By getLocatorByString(String locator_with_type)
+    public By getLocatorByString(String locator_with_type)
     {
         System.out.println("Passed locators:  " + locator_with_type + " !!!!!!!!!!!!");
 

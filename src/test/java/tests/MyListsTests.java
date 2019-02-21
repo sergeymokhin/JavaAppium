@@ -7,8 +7,10 @@ import lib.ui.factories.ArticlePageObjectFactory;
 import lib.ui.factories.MyListsPageObjectFactory;
 import lib.ui.factories.NavigationUIFactory;
 import lib.ui.factories.SearchPageObjectFactory;
+import org.junit.Assert;
 import org.junit.Test;
 
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class MyListsTests extends CoreTestCase {
@@ -69,50 +71,88 @@ public class MyListsTests extends CoreTestCase {
         if (Platform.getInstance().isAndroid()) {
             MyListsPageObject.openFolderByName(name_of_folder);
         }
-
 //        MyListsPageObject.closeLoginToSyncPopup();
         MyListsPageObject.swipeByArticleToDelete(article_title);
     }
 
     @Test
-    public void testSaveTwoArticles() // Ex.5 Тест: сохранение двух статей
+    public void testSaveTwoArticles() // Ex17: Рефакторинг
     {
         SearchPageObject SearchPageObject = SearchPageObjectFactory.get(driver);
 
         SearchPageObject.initSearchInput();
         SearchPageObject.typeSearchLine("Java");
-        SearchPageObject.clickByArticleWithSubstring("Object-oriented programming language");
+        SearchPageObject.clickByArticleWithSubstring("bject-oriented programming language");
 
         ArticlePageObject ArticlePageObject = ArticlePageObjectFactory.get(driver);
-
         ArticlePageObject.waitForTitleElement();
         String first_article_title = ArticlePageObject.getArticleTitle();
-        String name_of_folder = "Learning programming";
-        ArticlePageObject.addArticleToNewList(name_of_folder);
+//        String article_title = ArticlePageObject.getArticleTitle();
+
+        if (Platform.getInstance().isAndroid()) {
+            ArticlePageObject.addArticleToNewList(name_of_folder);
+        } else {
+            ArticlePageObject.addArticlesToMySaved();
+        }
+
+        if (Platform.getInstance().isMw()) {
+            AuthorizationPageObject Auth = new AuthorizationPageObject(driver);
+            Auth.clickAuthButton();
+            Auth.enterLoginData(login, password);
+            Auth.submitForm();
+            System.out.println("AUTH SUCCESS");
+
+            ArticlePageObject.waitForTitleElement();
+
+            assertEquals("We are not on the same page after login",
+                    first_article_title,
+                    ArticlePageObject.getArticleTitle());
+
+            ArticlePageObject.addArticlesToMySaved();
+        }
+
         ArticlePageObject.closeArticle();
 
         SearchPageObject.initSearchInput();
         SearchPageObject.typeSearchLine("Swift");
-        SearchPageObject.clickByArticleWithSubstring("General-purpose, multi-paradigm, " +
-                "compiled programming language");
+        SearchPageObject.clickByArticleWithSubstring("programming language");
 
         ArticlePageObject.waitForTitleElement();
         String second_article_title = ArticlePageObject.getArticleTitle();
-        ArticlePageObject.addNewArticleToExistingList(name_of_folder);
+
+        if (Platform.getInstance().isAndroid()) {
+            ArticlePageObject.addArticleToNewList(name_of_folder);
+        } else {
+            ArticlePageObject.addArticlesToMySaved();
+        }
+
         ArticlePageObject.closeArticle();
 
         NavigationUI NavigationUI = NavigationUIFactory.get(driver);
+        NavigationUI.openNavigation();
+
         NavigationUI.clickMyLists();
 
-        ArticlePageObject.openMyListByListName(name_of_folder);
-        ArticlePageObject.swipeElementToLeftToDelete(first_article_title);
-        ArticlePageObject.makeSureArticleWasDeleted(first_article_title);
-        ArticlePageObject.makeSureArticlePresentByTitle(second_article_title);
-        ArticlePageObject.clickOnUndeletedArticle(second_article_title);
-        String second_article_title_after_deleting_the_first_one = ArticlePageObject.getArticleTitle();
+        MyListsPageObject MyListsPageObject = MyListsPageObjectFactory.get(driver);
 
-        assertTrue("Article tittle does not match after deletion from reading list",
-                second_article_title.contentEquals(second_article_title_after_deleting_the_first_one));
+        List<String> ArticlesBeforeDelete = MyListsPageObject.addArticlesToList();
+
+        System.out.println(ArticlesBeforeDelete.size());
+
+        MyListsPageObject.swipeByArticleToDelete(first_article_title);
+        MyListsPageObject.waitForArticleToDisappearByTitle(first_article_title);
+
+        System.out.println("The first article was deleted");
+
+        List<String> ArticlesAfterDelete = MyListsPageObject.addArticlesToList();
+
+        Assert.assertTrue("Articles does not match",
+                ArticlesBeforeDelete.get(0).equals(ArticlesAfterDelete.get(0)));
+
+        Assert.assertTrue("It seems that we don't delete an article",
+                ArticlesAfterDelete.size() == 1 && ArticlesBeforeDelete.size() == 2);
+
     }
 
 }
+

@@ -1,13 +1,19 @@
 package lib.ui;
 
 import lib.Platform;
+import org.openqa.selenium.By;
+import org.openqa.selenium.WebElement;
 import org.openqa.selenium.remote.RemoteWebDriver;
+
+import java.util.LinkedList;
+import java.util.List;
 
 abstract public class MyListsPageObject extends MainPageObject {
 
     protected static String
             FOLDER_BY_NAME_TPL,
             ARTICLE_BY_TITLE_TPL,
+            ARTICLES_LIST,
             REMOVE_FROM_SAVED_BUTTON;
 
 
@@ -44,8 +50,8 @@ abstract public class MyListsPageObject extends MainPageObject {
     public void waitForArticleToAppearByTitle(String article_title)
     {
         String article_xpath = getSavedArticleXpathByTitle(article_title);
-        System.out.println(article_xpath);
-        System.out.println(article_title);
+//        System.out.println(article_xpath);
+//        System.out.println(article_title);
         this.waitForElementPresent(article_xpath,
                 "Cannot find saved article by title '" + article_title + "'", 10);
     }
@@ -91,5 +97,17 @@ abstract public class MyListsPageObject extends MainPageObject {
     {
         this.waitForElementAndClick("id:places auth close", "Cannot close Login To Sync popup",
                 5);
+    }
+
+    public List<String> addArticlesToList()
+    {
+        List<String> articles = new LinkedList<String>();
+
+        By by = getLocatorByString(ARTICLES_LIST);
+        List<WebElement> elements = driver.findElements(by);
+        for(WebElement element : elements) {
+            articles.add(element.getAttribute("name"));
+        }
+        return articles;
     }
 }
